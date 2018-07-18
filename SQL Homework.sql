@@ -26,7 +26,7 @@ ADD COLUMN middle_name VARCHAR(30) AFTER first_name;
 
 # 3b. You realize that some of these actors have tremendously long last names. Change the data type of the middle_name column to blob.
 ALTER TABLE actor
-MODIFY COLUMN middle_name blob;
+MODIFY COLUMN middle_name BLOB;
 
 # 3c. Now delete the middle_name column.
 ALTER TABLE actor
@@ -53,7 +53,7 @@ SET first_name ='MUCHO GROUCHO'
 WHERE first_name ='GROUCHO';
 
 # 5a. You cannot locate the schema of the address table. Which query would you use to re-create it?
-SHOW CREATE TABLE address;
+DESCRIBE sakila.address
 
 # 6a. Use JOIN to display the first and last names, as well as the address, of each staff member. Use the tables staff and address:
 SELECT staff.first_name, staff.last_name, address.address
@@ -93,25 +93,17 @@ customer.customer_id = payment.customer_id
 GROUP BY customer.last_name;
 
 # 7a. The music of Queen and Kris Kristofferson have seen an unlikely resurgence. As an unintended consequence, films starting with the letters K and Q have also soared in popularity. Use subqueries to display the titles of movies starting with the letters K and Q whose language is English. 
-SELECT * FROM film WHERE film.title LIKE 'K%' AND 'Q%'
-INNER JOIN language ON
-language.language_id = film.language_id
-WHERE language.name = 'English';
+SELECT title
+FROM film
+WHERE (title LIKE 'K%' OR title LIKE 'Q%') 
+AND language_id = (SELECT language_id FROM language where name='English')
 
 # 7b. Use subqueries to display all actors who appear in the film Alone Trip.
 SELECT first_name, last_name
 FROM actor
-WHERE actor_id IN
- (
-  SELECT actor_id
-  FROM film_actor
-  WHERE film_id IN
-   (
-    SELECT film_id
-    FROM film
-    WHERE title = 'Alone Trip'
-   )
-  );
+WHERE actor_id
+IN (SELECT actor_id FROM film_actor WHERE film_id 
+IN (SELECT film_id from film where title='ALONE TRIP'))
 
 # 7c. You want to run an email marketing campaign in Canada, for which you will need the names and email addresses of all Canadian customers. Use joins to retrieve this information.
 SELECT customer.first_name, customer.last_name, customer.email
@@ -121,16 +113,22 @@ INNER JOIN city ON address.city_id = city.city_id
 WHERE country_id = '20';
 
 # 7d. Sales have been lagging among young families, and you wish to target all family movies for a promotion. Identify all movies categorized as family films.
-SELECT title, rating FROM film WHERE rating = 'PG' AND 'G';
+SELECT title, rating
+FROM film
+WHERE (rating LIKE '%PG' OR rating LIKE '%G');
 
 # 7e. Display the most frequently rented movies in descending order.
-
+SELECT title, COUNT(film.film_id) AS 'Count_of_Rented_Movies'
+FROM  film
+JOIN inventory ON (film.film_id= inventory.film_id)
+JOIN rental ON (inventory.inventory_id=rental.inventory_id)
+GROUP BY title ORDER BY Count_of_Rented_Movies DESC;
 
 # 7f. Write a query to display how much business, in dollars, each store brought in.
-SELECT SUM(payment.amount), store.store_id
+SELECT staff.store_id, SUM(payment.amount) 
 FROM payment
-INNER JOIN staff ON payment.staff_id = staff.staff_id
-INNER JOIN store ON staff.store_id = store.store_id;
+JOIN staff ON (payment.staff_id=staff.staff_id)
+GROUP BY store_id;
 
 # 7g. Write a query to display for each store its store ID, city, and country.
 SELECT store.store_id, city.city, country.country 
@@ -140,12 +138,21 @@ INNER JOIN city ON address.city_id = city.city_id
 INNER JOIN country ON city.country_id = country.country_id;
 
 # 7h. List the top five genres in gross revenue in descending order. (Hint: you may need to use the following tables: category, film_category, inventory, payment, and rental.)
-
+SELECT category.name AS 'Top Five', SUM(payment.amount) AS 'Gross' 
+FROM category
+JOIN film_category ON (category.category_id=film_category.category_id)
+JOIN inventory ON (film_category.film_id=inventory.film_id)
+JOIN rental ON (inventory.inventory_id=rental.inventory_id)
+JOIN payment ON (rental.rental_id=payment.rental_id)
+GROUP BY category.name ORDER BY Gross  LIMIT 5;
 
 # 8a. In your new role as an executive, you would like to have an easy way of viewing the Top five genres by gross revenue. Use the solution from the problem above to create a view. If you haven't solved 7h, you can substitute another query to create a view.
-
+CREATE VIEW Top_Five_Genres_By_Gross_Revenue
+AS SELECT Music, Travel, Classics, Children, Horror
+FROM category;
 
 # 8b. How would you display the view that you created in 8a?
-
+SELECT * FROM TopFive
 
 # 8c. You find that you no longer need the view top_five_genres. Write a query to delete it.
+DROP VIEW TopFive
