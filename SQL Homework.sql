@@ -8,8 +8,8 @@ SELECT CONCAT(first_name, ' ', last_name) AS 'Actor Name' FROM actor;
 
 # 2a. You need to find the ID number, first name, and last name of an actor, of whom you know only the first name, "Joe." What query would you use to obtain this information?
 SELECT actor_id, first_name, last_name
-	FROM actor
-    WHERE first_name = "Joe";
+FROM actor
+WHERE first_name = "Joe";
 
 # 2b. Find all actors whose last name contain the letters GEN:
 SELECT * FROM actor WHERE last_name LIKE '%GEN%';
@@ -79,7 +79,7 @@ GROUP BY film.title;
 SELECT COUNT(*)
 FROM inventory
 WHERE film_id IN
-	(
+(
     SELECT film_id
     FROM film
     WHERE title = 'Hunchback Impossible'
